@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_main_setting"
+        android:orderInCategory="100"
+        android:title="@string/settings" />
+
+    <item
+        android:id="@+id/menu_main_enable_permissions"
+        android:orderInCategory="200"
+        android:title="@string/enable_permissions" />
+
+    <item
+        android:id="@+id/menu_main_history"
+        android:orderInCategory="300"
+        android:title="@string/view_history" />
+
+    <item
+        android:id="@+id/menu_main_nextcloud"
+        android:orderInCategory="400"
+        android:title="@string/nextcloud" />
+</menu>
