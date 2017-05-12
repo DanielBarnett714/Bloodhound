@@ -163,9 +163,7 @@ public class BloodhoundService extends Service{
      * The Location listener.
      */
     LocationListener locationListener;
-    /**
-     * The M allow rebind.
-     */
+
     boolean mAllowRebind;
 
     @Override
@@ -299,6 +297,7 @@ public class BloodhoundService extends Service{
         if (locationManager != null){
             locationManager.removeUpdates(locationListener);
             locationManager = null;
+            locationListener = null;
         }
 
         if (r != null) {
@@ -356,21 +355,24 @@ public class BloodhoundService extends Service{
             mLocationManager = null;
             mLocationManager = (LocationManager) mContext.getSystemService(Context.LOCATION_SERVICE);
 
+            String gpsProvider = LocationManager.GPS_PROVIDER.toString();
+            String netProvider = LocationManager.NETWORK_PROVIDER.toString();
 
-            String bestProvider = LocationManager.GPS_PROVIDER.toString();
-            String okayProvider = LocationManager.NETWORK_PROVIDER.toString();
-            try {
-                locationListener = new BloodhoundLocationListener(bestProvider);
-                mLocationManager.requestLocationUpdates(bestProvider, 300 * 1000, 2, locationListener);
-                return;
-            }catch (SecurityException e){
-                Log.e(TAG, e.getMessage());
-            }
-            try {
-                locationListener = new BloodhoundLocationListener(okayProvider);
-                mLocationManager.requestLocationUpdates(bestProvider, 300 * 1000, 2, locationListener);
-            }catch (SecurityException e){
-                Log.e(TAG, e.getMessage());
+            if (mLocationManager.isProviderEnabled(gpsProvider)){
+                try {
+                    locationListener = new BloodhoundLocationListener(gpsProvider);
+                    mLocationManager.requestLocationUpdates(gpsProvider, 300 * 1000, 20, locationListener);
+                }catch (SecurityException e){
+                    Log.e(TAG, e.getMessage());
+                }
+            }else if(mLocationManager.isProviderEnabled(netProvider)){
+                try {
+                    locationListener = new BloodhoundLocationListener(netProvider);
+                    mLocationManager.requestLocationUpdates(netProvider, 300 * 1000, 20, locationListener);
+                }catch (SecurityException e){
+                    Log.e(TAG, e.getMessage());
+                }
+
             }
 
             Log.i(TAG, "using location");
@@ -505,6 +507,14 @@ public class BloodhoundService extends Service{
                                             
                                             if (cameraType == 0) {
                                                 takePhoto(context, 1);
+
+                                            }else if(cameraType == 1){
+                                                new Timer().schedule(new TimerTask() {
+                                                    @Override
+                                                    public void run() {
+                                                        takePhoto(context, 0);
+                                                    }
+                                                }, 60*1000);
                                             }
                                         }
                                     });
@@ -621,7 +631,7 @@ public class BloodhoundService extends Service{
                 recorder.release();
                 nextcloudActions.startUpload(audiofile, "Bloodhound/Recordings/" + audiofile.getName(), "audio/mpeg");
             }
-        }, 30000);
+        }, 30*1000);
 
     }
 

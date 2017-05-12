@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -42,6 +43,9 @@ public class CheckService extends Service {
     /**
      * The Check config.
      */
+
+    private static final String TAG = "CheckService";
+
     static CheckConfig checkConfig;
     /**
      * The Timer.
@@ -207,73 +211,76 @@ public class CheckService extends Service {
             boolean alarm, location, camera, mic;
 
             if (operation instanceof DownloadRemoteFileOperation) {
-                if (result.isSuccess()) {
+                try {
+                    if (result.isSuccess()) {
 
-                    File checkFile = new File(mContext.getFilesDir() + "/Bloodhound/Config/check");
-                    int check = 0;
-                    try {
-                        String checkString = new Scanner(checkFile).useDelimiter("\\Z").next();
+                        File checkFile = new File(mContext.getFilesDir() + "/Bloodhound/Config/check");
+                        int check = 0;
                         try {
-                            check = Integer.valueOf(checkString);
-                        }catch (NumberFormatException e){
-                            Log.e("Check file", e.getMessage());
-                            return;
-                        }
+                            String checkString = new Scanner(checkFile).useDelimiter("\\Z").next();
+                            try {
+                                check = Integer.valueOf(checkString);
+                            } catch (NumberFormatException e) {
+                                Log.e("Check file", e.getMessage());
+                                return;
+                            }
 
-                        File configFile = new File(mContext.getFilesDir() + "/Bloodhound/Config/config.json");
-                        if (check == 1) {
-                            if (configFile.exists()) {
-                                if (configFile.lastModified() > checkFile.lastModified()) {
-                                    if (!BloodhoundService.isRunning) {
-                                        try {
-                                            String content = new Scanner(configFile).useDelimiter("\\Z").next();
-                                            System.out.println(content);
-                                            JSONObject jsonConfig = new JSONObject(content);
-                                            System.out.println(jsonConfig.toString());
-                                            alarm = jsonConfig.getBoolean("alarm");
-                                            camera = jsonConfig.getBoolean("camera");
-                                            location = jsonConfig.getBoolean("location");
-                                            mic = jsonConfig.getBoolean("mic");
+                            File configFile = new File(mContext.getFilesDir() + "/Bloodhound/Config/config.json");
+                            if (check == 1) {
+                                if (configFile.exists()) {
+                                    if (configFile.lastModified() > checkFile.lastModified()) {
+                                        if (!BloodhoundService.isRunning) {
+                                            try {
+                                                String content = new Scanner(configFile).useDelimiter("\\Z").next();
+                                                System.out.println(content);
+                                                JSONObject jsonConfig = new JSONObject(content);
+                                                System.out.println(jsonConfig.toString());
+                                                alarm = jsonConfig.getBoolean("alarm");
+                                                camera = jsonConfig.getBoolean("camera");
+                                                location = jsonConfig.getBoolean("location");
+                                                mic = jsonConfig.getBoolean("mic");
 
-                                            intent.putExtra("useAlarm", alarm);
-                                            intent.putExtra("useLocation", location);
-                                            intent.putExtra("useCamera", camera);
-                                            intent.putExtra("useMic", mic);
-                                            intent.putExtra("trackingType", "Nextcloud");
+                                                intent.putExtra("useAlarm", alarm);
+                                                intent.putExtra("useLocation", location);
+                                                intent.putExtra("useCamera", camera);
+                                                intent.putExtra("useMic", mic);
+                                                intent.putExtra("trackingType", "Nextcloud");
 
-                                            startService(intent);
+                                                startService(intent);
 
-                                            timer.cancel();
-                                            timer = new Timer();
-                                            timer.scheduleAtFixedRate(new TimerTask() {
-                                                @Override
-                                                public void run() {
-                                                    if (permissionsEnabled()) {
+                                                timer.cancel();
+                                                timer = new Timer();
+                                                timer.scheduleAtFixedRate(new TimerTask() {
+                                                    @Override
+                                                    public void run() {
+                                                        if (permissionsEnabled()) {
 
-                                                        checkConfig.startDownload("Bloodhound/Config/check", mContext.getFilesDir() + "/");
-                                                        System.out.println("Checking Bloodhound");
+                                                            checkConfig.startDownload("Bloodhound/Config/check", mContext.getFilesDir() + "/");
+                                                            System.out.println("Checking Bloodhound");
+                                                        }
                                                     }
-                                                }
-                                            }, 0, 10*1000);
-                                        } catch (JSONException e) {
-                                            e.printStackTrace();
+                                                }, 0, 10 * 1000);
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
                                         }
-                                    }
 
-                                }else{
+                                    } else {
+                                        startDownload("Bloodhound/Config/config.json", mContext.getFilesDir() + "/");
+                                    }
+                                } else {
                                     startDownload("Bloodhound/Config/config.json", mContext.getFilesDir() + "/");
                                 }
-                            }else{
-                                startDownload("Bloodhound/Config/config.json", mContext.getFilesDir() + "/");
+                            } else if (check == 0 && BloodhoundService.isRunning && BloodhoundService.getBloodhoundContext().getPackageName() == mContext.getPackageName()) {
+                                Log.i(TAG, "Stopping bloodhound");
+                                stopService(intent);
                             }
-                        }else if (check == 0 && BloodhoundService.isRunning && BloodhoundService.getBloodhoundContext().getPackageName() == mContext.getPackageName()){
-                            System.out.println("Stopping bloodhound");
-                            stopService(intent);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
                         }
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
                     }
-
+                }catch (NoSuchElementException e){
+                    Log.e(TAG, e.getMessage());
                 }
             }
         }

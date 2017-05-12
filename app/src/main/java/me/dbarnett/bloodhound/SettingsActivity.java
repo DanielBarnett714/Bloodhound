@@ -138,12 +138,14 @@ public class SettingsActivity extends PreferenceActivity {
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
             int id = item.getItemId();
-            if (id == android.R.id.home && !isXLargeTablet(getContext())) {
-                startActivity(new Intent(getActivity(), SettingsActivity.class));
-                return true;
-            }else if (id == android.R.id.home){
-                startActivity(new Intent(getActivity(), BloodhoundActivity.class));
-                return true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (id == android.R.id.home && !isXLargeTablet(getContext())) {
+                    startActivity(new Intent(getActivity(), SettingsActivity.class));
+                    return true;
+                }else if (id == android.R.id.home){
+                    startActivity(new Intent(getActivity(), BloodhoundActivity.class));
+                    return true;
+                }
             }
             return super.onOptionsItemSelected(item);
         }
